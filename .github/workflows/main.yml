@@ -2,38 +2,42 @@ name: Hourly Scraper
 
 on:
   schedule:
-    - cron: '0 * * * *'  # 每小時執行一次
-  workflow_dispatch:      # 允許手動執行
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 jobs:
   run-scraper:
     runs-on: ubuntu-latest
+    # 強制開啟寫入權限
     permissions:
-      contents: write    # 直接在任務中宣告寫入權限
+      contents: write
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4 # 升級到 v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # 確保使用當前的 token
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5 # 升級到 v5
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
+      - name: Install deps
         run: pip install requests pandas
 
       - name: Run script
         run: python scraper.py
 
-      - name: Commit and Push changes
+      - name: Commit and Push
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add parking_history.csv
-          # 檢查是否有變更，避免因為沒有變更而報錯
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "No changes"
           else
-            git commit -m "Auto-update parking data: $(date)"
-            git push
+            git commit -m "Update parking data"
+            git push origin main
           fi
